@@ -1,0 +1,512 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @default(uuid())
+  username              String    @unique
+  email                 String    @unique
+  passwordHash          String    @map("password_hash")
+  firstName             String    @map("first_name")
+  middleName            String?   @map("middle_name")
+  lastName              String    @map("last_name")
+  role                  UserRole
+  isActive              Boolean   @default(true) @map("is_active")
+  createdBy             String?   @map("created_by")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  lastLogin             DateTime? @map("last_login")
+  passwordResetToken    String?   @map("password_reset_token")
+  passwordResetExpires  DateTime? @map("password_reset_expires")
+
+  // Relations
+  creator               User?     @relation("UserCreator", fields: [createdBy], references: [id])
+  createdUsers          User[]    @relation("UserCreator")
+  reportingEntities     ReportingEntity[]
+  transactionManners    TransactionManner[]
+  crimeTypes            CrimeType[]
+  branches              Branch[]
+  strReports            StrReport[]
+  ctrReports            CtrReport[]
+  reportAttachments     ReportAttachment[]
+  userSessions          UserSession[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  systemSettings        SystemSetting[]
+  reviewedStrReports    StrReport[]  @relation("StrReportReviewer")
+  processedCtrReports   CtrReport[]  @relation("CtrReportProcessor")
+
+  @@map("users")
+}
+
+model ReportingEntity {
+  id                String   @id @default(uuid())
+  entityName        String   @map("entity_name")
+  taxId             String   @unique @map("tax_id")
+  businessType      String   @map("business_type")
+  issuingCountry    String   @map("issuing_country")
+  registrationNumber String  @unique @map("registration_number")
+  countryOfOrigin   String   @map("country_of_origin")
+  country           String
+  stateRegion       String?  @map("state_region")
+  cityTown          String?  @map("city_town")
+  subcityZone       String?  @map("subcity_zone")
+  woreda            String?
+  kebele            String?
+  houseNumber       String?  @map("house_number")
+  postalAddress     String?  @map("postal_address")
+  status            EntityStatus @default(ACTIVE)
+  createdBy         String   @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator           User     @relation(fields: [createdBy], references: [id])
+  branches          Branch[]
+
+  @@map("reporting_entities")
+}
+
+model TransactionManner {
+  id          String    @id @default(uuid())
+  mannerName  String    @unique @map("manner_name")
+  description String?
+  isActive    Boolean   @default(true) @map("is_active")
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  creator     User      @relation(fields: [createdBy], references: [id])
+  strReports  StrReport[]
+  ctrReports  CtrReport[]
+
+  @@map("transaction_manner")
+}
+
+model CrimeType {
+  id            String        @id @default(uuid())
+  crimeName     String        @unique @map("crime_name")
+  description   String?
+  severityLevel SeverityLevel @default(MEDIUM) @map("severity_level")
+  isActive      Boolean       @default(true) @map("is_active")
+  createdBy     String        @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  creator       User          @relation(fields: [createdBy], references: [id])
+  strReports    StrReport[]
+
+  @@map("crime_types")
+}
+
+model Branch {
+  id                  String   @id @default(uuid())
+  branchName          String   @map("branch_name")
+  branchCode          String?  @unique @map("branch_code")
+  reportingEntityId   String   @map("reporting_entity_id")
+  addressType         AddressType @default(KNOWN) @map("address_type")
+  country             String?
+  stateRegion         String?  @map("state_region")
+  cityTown            String?  @map("city_town")
+  subcityZone         String?  @map("subcity_zone")
+  woreda              String?
+  kebele              String?
+  houseNumber         String?  @map("house_number")
+  postalAddress       String?  @map("postal_address")
+  phoneNumber         String?  @map("phone_number")
+  email               String?
+  faxNumber           String?  @map("fax_number")
+  isActive            Boolean  @default(true) @map("is_active")
+  createdBy           String   @map("created_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  reportingEntity     ReportingEntity @relation(fields: [reportingEntityId], references: [id], onDelete: Cascade)
+  creator             User     @relation(fields: [createdBy], references: [id])
+  strReports          StrReport[]
+  ctrReports          CtrReport[]
+
+  @@map("branches")
+}
+
+model StrReport {
+  id                              String    @id @default(uuid())
+  reportNumber                    String    @unique @map("report_number")
+  
+  // Transaction Information
+  transactionDateTime             DateTime  @map("transaction_date_time")
+  transactionType                 TransactionType @map("transaction_type")
+  otherCurrency                   String?   @map("other_currency")
+  fundAmountBirr                  Decimal   @map("fund_amount_birr") @db.Decimal(15, 2)
+  transactionCurrency             String    @default("ETB") @map("transaction_currency")
+  transactionMannerId             String?   @map("transaction_manner_id")
+  transactionBranchId             String?   @map("transaction_branch_id")
+  
+  // Account Information
+  accountBranchName               String?   @map("account_branch_name")
+  dateOfBalanceHeld               DateTime? @map("date_of_balance_held") @db.Date
+  accountNumber                   String?   @map("account_number")
+  balanceHeld                     Decimal?  @map("balance_held") @db.Decimal(15, 2)
+  accountOwnerFirstName           String?   @map("account_owner_first_name")
+  accountOwnerMiddleName          String?   @map("account_owner_middle_name")
+  accountOwnerLastName            String?   @map("account_owner_last_name")
+  accountDateOpened               DateTime? @map("account_date_opened") @db.Date
+  accountDateClosed               DateTime? @map("account_date_closed") @db.Date
+  accountType                     String?   @map("account_type")
+  
+  // Beneficiary Information
+  beneficiaryType                 BeneficiaryType? @map("beneficiary_type")
+  beneficiaryFullName             String?   @map("beneficiary_full_name")
+  beneficiaryPhone                String?   @map("beneficiary_phone")
+  beneficiaryIdPassport           String?   @map("beneficiary_id_passport")
+  beneficiaryWoreda               String?   @map("beneficiary_woreda")
+  beneficiaryKebele               String?   @map("beneficiary_kebele")
+  beneficiaryStateRegion          String?   @map("beneficiary_state_region")
+  beneficiaryDateOfBirth          DateTime? @map("beneficiary_date_of_birth") @db.Date
+  beneficiaryCompanyName          String?   @map("beneficiary_company_name")
+  beneficiaryCompanyBranch        String?   @map("beneficiary_company_branch")
+  beneficiaryCompanyAccount       String?   @map("beneficiary_company_account")
+  beneficiaryCompanyBalance       Decimal?  @map("beneficiary_company_balance") @db.Decimal(15, 2)
+  beneficiaryTaxTin               String?   @map("beneficiary_tax_tin")
+  beneficiaryAddress              String?   @map("beneficiary_address")
+  
+  // Association Information
+  associationType                 AssociationType? @map("association_type")
+  associationFirstName            String?   @map("association_first_name")
+  associationMiddleName           String?   @map("association_middle_name")
+  associationLastName             String?   @map("association_last_name")
+  associationOtherName            String?   @map("association_other_name")
+  associationNationality          String?   @map("association_nationality")
+  associationPassportNumber       String?   @map("association_passport_number")
+  associationIdCardNumber         String?   @map("association_id_card_number")
+  associationPlaceOfWork          String?   @map("association_place_of_work")
+  associationGender               Gender?   @map("association_gender")
+  associationReason               String?   @map("association_reason")
+  associationCompanyName          String?   @map("association_company_name")
+  associationRegistrationAddress  String?   @map("association_registration_address")
+  associationBusinessType         String?   @map("association_business_type")
+  associationOtherParticulars     String?   @map("association_other_particulars")
+  
+  // Person Being Reported
+  personInvolvement               PersonInvolvement? @map("person_involvement")
+  personFirstName                 String?   @map("person_first_name")
+  personMiddleName                String?   @map("person_middle_name")
+  personLastName                  String?   @map("person_last_name")
+  personOtherName                 String?   @map("person_other_name")
+  personIdentificationType        IdentificationType? @map("person_identification_type")
+  personResidenceId               String?   @map("person_residence_id")
+  personOtherId                   String?   @map("person_other_id")
+  personBirthDate                 DateTime? @map("person_birth_date") @db.Date
+  personGender                    Gender?   @map("person_gender")
+  personPassportNumber            String?   @map("person_passport_number")
+  personPassportIssuingCountry    String?   @map("person_passport_issuing_country")
+  personCountryOfResidence        String?   @map("person_country_of_residence")
+  personCountryOfOrigin           String?   @map("person_country_of_origin")
+  personOccupation                String?   @map("person_occupation")
+  
+  // Entity/Individual Details
+  entityFullName                  String?   @map("entity_full_name")
+  entityBusinessType              String?   @map("entity_business_type")
+  entityRegistrationNumber        String?   @map("entity_registration_number")
+  entityTaxId                     String?   @map("entity_tax_id")
+  entityIssuingCountry            String?   @map("entity_issuing_country")
+  entityAddressType               AddressType? @map("entity_address_type")
+  entityCountry                   String?   @map("entity_country")
+  entityStateRegion               String?   @map("entity_state_region")
+  entitySubcityZone               String?   @map("entity_subcity_zone")
+  entityWoreda                    String?   @map("entity_woreda")
+  entityTown                      String?   @map("entity_town")
+  entityKebele                    String?   @map("entity_kebele")
+  entityHouseNumber               String?   @map("entity_house_number")
+  entityPostalAddress             String?   @map("entity_postal_address")
+  entityEmail                     String?   @map("entity_email")
+  
+  // Representative Details
+  representativeFirstName         String?   @map("representative_first_name")
+  representativeMiddleName        String?   @map("representative_middle_name")
+  representativeLastName          String?   @map("representative_last_name")
+  representativeBirthDate         DateTime? @map("representative_birth_date") @db.Date
+  representativePassportNumber    String?   @map("representative_passport_number")
+  representativeIssuingCountry    String?   @map("representative_issuing_country")
+  representativeBusinessMobile    String?   @map("representative_business_mobile")
+  representativeBusinessContact   String?   @map("representative_business_contact")
+  representativeBusinessFax       String?   @map("representative_business_fax")
+  representativeResidentialContact String?  @map("representative_residential_contact")
+  representativeEmail             String?   @map("representative_email")
+  
+  // Suspicious Activity
+  suspiciousReason                String    @map("suspicious_reason")
+  crimeTypeId                     String?   @map("crime_type_id")
+  
+  // Additional Information
+  additionalInformation           String?   @map("additional_information")
+  
+  // Status and metadata
+  status                          ReportStatus @default(DRAFT)
+  submittedAt                     DateTime? @map("submitted_at")
+  reviewedAt                      DateTime? @map("reviewed_at")
+  reviewedBy                      String?   @map("reviewed_by")
+  createdBy                       String    @map("created_by")
+  createdAt                       DateTime  @default(now()) @map("created_at")
+  updatedAt                       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  transactionManner               TransactionManner? @relation(fields: [transactionMannerId], references: [id])
+  transactionBranch               Branch?   @relation(fields: [transactionBranchId], references: [id])
+  crimeType                       CrimeType? @relation(fields: [crimeTypeId], references: [id])
+  reviewer                        User?     @relation("StrReportReviewer", fields: [reviewedBy], references: [id])
+  creator                         User      @relation(fields: [createdBy], references: [id])
+  attachments                     ReportAttachment[]
+
+  @@map("str_reports")
+}
+
+model CtrReport {
+  id                          String    @id @default(uuid())
+  reportNumber                String    @unique @map("report_number")
+  
+  // Transaction Information
+  transactionDateTime         DateTime  @map("transaction_date_time")
+  transactionType             TransactionType @map("transaction_type")
+  currencyType                String    @default("ETB") @map("currency_type")
+  amount                      Decimal   @db.Decimal(15, 2)
+  transactionMannerId         String?   @map("transaction_manner_id")
+  transactionBranchId         String?   @map("transaction_branch_id")
+  
+  // Who is conducting the transaction
+  conductorType               ConductorType @map("conductor_type")
+  
+  // Individual Conductor Details
+  conductorFirstName          String?   @map("conductor_first_name")
+  conductorMiddleName         String?   @map("conductor_middle_name")
+  conductorLastName           String?   @map("conductor_last_name")
+  conductorIdNumber           String?   @map("conductor_id_number")
+  conductorPassportNumber     String?   @map("conductor_passport_number")
+  conductorPhone              String?   @map("conductor_phone")
+  conductorAddress            String?   @map("conductor_address")
+  
+  // Company/Organization Conductor Details
+  conductorCompanyName        String?   @map("conductor_company_name")
+  conductorRegistrationNumber String?   @map("conductor_registration_number")
+  conductorTaxId              String?   @map("conductor_tax_id")
+  conductorBusinessType       String?   @map("conductor_business_type")
+  conductorCompanyAddress     String?   @map("conductor_company_address")
+  conductorRepresentativeName String?   @map("conductor_representative_name")
+  conductorRepresentativePhone String?  @map("conductor_representative_phone")
+  
+  // Account Information
+  accountNumber               String?   @map("account_number")
+  accountType                 String?   @map("account_type")
+  accountOwnerName            String?   @map("account_owner_name")
+  accountBalance              Decimal?  @map("account_balance") @db.Decimal(15, 2)
+  
+  // Purpose of Transaction
+  transactionPurpose          String?   @map("transaction_purpose")
+  
+  // Status and metadata
+  status                      CtrStatus @default(SUBMITTED)
+  processedAt                 DateTime? @map("processed_at")
+  processedBy                 String?   @map("processed_by")
+  createdBy                   String    @map("created_by")
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  transactionManner           TransactionManner? @relation(fields: [transactionMannerId], references: [id])
+  transactionBranch           Branch?   @relation(fields: [transactionBranchId], references: [id])
+  processor                   User?     @relation("CtrReportProcessor", fields: [processedBy], references: [id])
+  creator                     User      @relation(fields: [createdBy], references: [id])
+  attachments                 ReportAttachment[]
+
+  @@map("ctr_reports")
+}
+
+model ReportAttachment {
+  id            String    @id @default(uuid())
+  strReportId   String?   @map("str_report_id")
+  ctrReportId   String?   @map("ctr_report_id")
+  fileName      String    @map("file_name")
+  filePath      String    @map("file_path")
+  fileSize      BigInt    @map("file_size")
+  fileType      String    @map("file_type")
+  mimeType      String?   @map("mime_type")
+  uploadedBy    String    @map("uploaded_by")
+  uploadedAt    DateTime  @default(now()) @map("uploaded_at")
+
+  // Relations
+  strReport     StrReport? @relation(fields: [strReportId], references: [id], onDelete: Cascade)
+  ctrReport     CtrReport? @relation(fields: [ctrReportId], references: [id], onDelete: Cascade)
+  uploader      User      @relation(fields: [uploadedBy], references: [id])
+
+  @@map("report_attachments")
+}
+
+model UserSession {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  sessionToken  String    @unique @map("session_token")
+  refreshToken  String?   @unique @map("refresh_token")
+  ipAddress     String?   @map("ip_address")
+  userAgent     String?   @map("user_agent")
+  expiresAt     DateTime  @map("expires_at")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastAccessed  DateTime  @default(now()) @map("last_accessed")
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+model Notification {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  title         String
+  message       String
+  type          NotificationType @default(INFO)
+  isRead        Boolean   @default(false) @map("is_read")
+  relatedTable  String?   @map("related_table")
+  relatedId     String?   @map("related_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  readAt        DateTime? @map("read_at")
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id            String    @id @default(uuid())
+  userId        String?   @map("user_id")
+  action        String
+  tableName     String    @map("table_name")
+  recordId      String?   @map("record_id")
+  oldValues     Json?     @map("old_values")
+  newValues     Json?     @map("new_values")
+  ipAddress     String?   @map("ip_address")
+  userAgent     String?   @map("user_agent")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user          User?     @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id            String    @id @default(uuid())
+  settingKey    String    @unique @map("setting_key")
+  settingValue  String?   @map("setting_value")
+  settingType   SettingType @default(STRING) @map("setting_type")
+  description   String?
+  isPublic      Boolean   @default(false) @map("is_public")
+  createdBy     String    @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  creator       User      @relation(fields: [createdBy], references: [id])
+
+  @@map("system_settings")
+}
+
+// Enums
+enum UserRole {
+  SUPER_ADMIN     @map("super_admin")
+  INTERMEDIATE_ADMIN @map("intermediate_admin")
+  DATA_ENCODER    @map("data_encoder")
+}
+
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum SeverityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AddressType {
+  KNOWN
+  UNKNOWN
+  OTHER
+}
+
+enum TransactionType {
+  WITHDRAWAL
+  DEPOSIT
+  TRANSFER
+}
+
+enum BeneficiaryType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum AssociationType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum PersonInvolvement {
+  INDIVIDUAL
+  OTHER
+}
+
+enum IdentificationType {
+  KNOWN
+  UNKNOWN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum ConductorType {
+  INDIVIDUAL
+  COMPANY
+  ORGANIZATION
+}
+
+enum CtrStatus {
+  SUBMITTED
+  PROCESSED
+  ARCHIVED
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+enum SettingType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
