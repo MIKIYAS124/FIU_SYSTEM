@@ -1,0 +1,93 @@
+fiu-system/
+├── setup.sh                           # One-command setup script
+├── database.sql                       # Complete database schema + sample data
+├── package.json                       # Frontend dependencies
+├── .env                              # Frontend environment variables
+├── README.md                         # Project documentation
+├── next.config.mjs                   # Next.js configuration
+├── tailwind.config.ts                # Tailwind CSS configuration
+├── tsconfig.json                     # TypeScript configuration
+├── postcss.config.js                 # PostCSS configuration
+│
+├── app/                              # Next.js App Router
+│   ├── layout.tsx                    # Root layout
+│   ├── page.tsx                      # Home page
+│   ├── globals.css                   # Global styles
+│   ├── login/
+│   │   └── page.tsx                  # Login page
+│   ├── dashboard/
+│   │   └── page.tsx                  # Main dashboard
+│   ├── super-admin/
+│   │   ├── layout.tsx                # Super admin layout
+│   │   ├── page.tsx                  # Super admin dashboard
+│   │   ├── users/
+│   │   │   └── page.tsx              # User management
+│   │   ├── reporting-entities/
+│   │   │   └── page.tsx              # Entity management
+│   │   └── reports/
+│   │       └── page.tsx              # All reports view
+│   ├── intermediate-admin/
+│   │   ├── layout.tsx                # Intermediate admin layout
+│   │   ├── page.tsx                  # Intermediate admin dashboard
+│   │   ├── users/
+│   │   │   └── page.tsx              # Data encoder management
+│   │   ├── branches/
+│   │   │   └── page.tsx              # Branch management
+│   │   └── reports/
+│   │       └── page.tsx              # Organization reports
+│   └── data-encoder/
+│       ├── layout.tsx                # Data encoder layout
+│       ├── page.tsx                  # Data encoder dashboard
+│       ├── reports/
+│       │   └── page.tsx              # Create/view reports
+│       └── upload/
+│           └── page.tsx              # File upload
+│
+├── components/                       # React components
+│   ├── ui/                          # Shadcn UI components
+│   │   ├── button.tsx               # Button component
+│   │   ├── card.tsx                 # Card component
+│   │   ├── input.tsx                # Input component
+│   │   ├── label.tsx                # Label component
+│   │   ├── textarea.tsx             # Textarea component
+│   │   ├── select.tsx               # Select component
+│   │   └── tabs.tsx                 # Tabs component
+│   ├── layout/
+│   │   ├── header.tsx               # Header component
+│   │   └── sidebar.tsx              # Sidebar component
+│   └── transaction-reporting/
+│       ├── multi-step-form.tsx      # Multi-step form wrapper
+│       └── steps/
+│           ├── transaction-information.tsx
+│           ├── account-information.tsx
+│           ├── beneficiary-information.tsx
+│           ├── association.tsx
+│           ├── person-being-reported.tsx
+│           ├── entity-individual.tsx
+│           ├── suspicious-activity.tsx
+│           ├── additional-information.tsx
+│           ├── file-upload.tsx
+│           └── review.tsx
+│
+├── lib/
+│   └── utils.ts                     # Utility functions
+│
+└── backend/                         # Express.js Backend
+    ├── package.json                 # Backend dependencies
+    ├── .env                        # Backend environment variables
+    └── src/
+        ├── app.js                  # Main Express application
+        ├── config/
+        │   └── database.js         # Database configuration
+        ├── middleware/
+        │   └── auth.js             # Authentication middleware
+        ├── controllers/
+        │   ├── authController.js   # Authentication logic
+        │   ├── reportController.js # Report management
+        │   ├── userController.js   # User management
+        │   └── branchController.js # Branch management
+        └── routes/
+            ├── auth.js             # Authentication routes
+            ├── reports.js          # Report routes
+            ├── users.js            # User routes
+            └── branches.js         # Branch routes
